@@ -8,3 +8,6 @@ example: tinyline.c example.c
 
 pedantic_example:
 	$(CC) tinyline.c example.c -o example $(CFLAGS) $(PEDANTIC_FLAGS)
+
+test: example
+	./test

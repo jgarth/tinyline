@@ -26,7 +26,7 @@ static inline int min(int a, int b) { return (a < b) ? a : b; }
 
 static bool isEmpty(const char* string) {
   for (const char* c = string; *c != '\0'; c++) {
-    if(!isspace(' ')) return false;
+    if(!isspace(*c)) return false;
   }
   return true;
 }
@@ -39,6 +39,7 @@ static void fatalError(const char* message) {
 #define NO_SELECTION -1
 #define DEFAULT_PROMPT "> "
 #define HISTORY_CAPACITY 100
+#define MIN_LINE_BUFFER_BYTES 255
 static char* history[HISTORY_CAPACITY];
 static int historySelection = -1;
 static int historyCount = 0;
@@ -52,7 +53,7 @@ static void clearLine(void) {
 }
 
 static void moveCursorToEndOfInput(void) {
-  printf("\r\033[%dC", utf8strlen(prompt) + utf8strlen(input) + 1);
+  printf("\r\033[%dC", utf8strlen(prompt) + utf8strlen(input));
 }
 
 static void redrawPromptLine(void) {
@@ -72,23 +73,22 @@ static void eraseInputBuffer() {
 
 static void resizeInputBuffer(int minSize) {
   if(inputCapacity >= minSize) return;
-  inputCapacity = max(max(minSize, 255), inputCount);
+  inputCapacity = max(max(minSize, MIN_LINE_BUFFER_BYTES), inputCount);
   input = realloc(input, sizeof(char) * inputCapacity);
 }
 
 static void setInputFromHistory(void) {
-  char *newInput = "";
-  int newInputLength = 1;
+  eraseInputBuffer();
 
   if (historySelection != NO_SELECTION) {
-    newInput = history[historySelection];
-    newInputLength = strlen(newInput);
+    char* newInput = history[historySelection];
+    int newLength = strlen(newInput);
+    resizeInputBuffer(newLength);
+    memcpy(input, newInput, newLength);
+    inputCount = newLength;
+  } else {
+    resizeInputBuffer(MIN_LINE_BUFFER_BYTES);
   }
-
-  eraseInputBuffer();
-  resizeInputBuffer(newInputLength);
-  memcpy(input, newInput, newInputLength);
-  inputCount = newInputLength;
 }
 
 static void historyDown(void) {
@@ -174,16 +174,21 @@ char* TinyLine_readLine(void) {
       continue;
     }
 
-    // Newline terminates input, terminate string and return.
+    // Newline or EOF terminate input, terminate string and return.
     if (c == '\n') {
       input[inputCount] = '\0';
+      break;
+    }
+
+    if (c == 0x04) {
+      input[inputCount] = '\x04';
       break;
     }
 
     // We only deal with four escape sequences: arrows
     if (c == 0x1b) {
       read(STDIN_FILENO, &c, 1);
-      if (c != '[') break;
+      if (c != '[' && c != 0x4f) break;
       read(STDIN_FILENO, &c, 1);
 
       switch (c) {

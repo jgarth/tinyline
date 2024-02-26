@@ -8,7 +8,8 @@ int main(__unused int argc, __unused char** argv) {
   TinyLine_setup();
   char* command = NULL;
 
-  while(command == NULL || memcmp("quit", command, 4) != 0) {
+  // 0x04 = EOF
+  while(command == NULL || *command != 0x04) {
     command = TinyLine_readLine();
     printf("%s\n", command);
   }

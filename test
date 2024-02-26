@@ -1,0 +1,51 @@
+#!/usr/bin/expect -f
+# Change 'expect' arguments to "-d -f" to receive debug output
+
+proc handle_failure {message} {
+    send_user "\n\nTest '$message' failed: did not receive expected response.\n"
+    exit 1
+}
+
+# 1s timeout is _plenty_
+set timeout 1
+
+# Use `tput` to generate the escape sequence for cursor up & down
+set cursorUp [exec tput kcuu1]
+set cursorDown [exec tput kcud1]
+
+# Spawn the process and interact, testing output against expectations
+spawn ./example
+expect "> " { } default { handle_failure "initial prompt" }
+
+send "foo"
+expect "foo" { } default { handle_failure "character feedback" }
+
+send "\r"
+expect "> " { } default { handle_failure "entering a command" }
+
+send "\r"
+expect "> " { } default { handle_failure "entering an empty command" }
+
+send "foo2\r"
+expect "> " { } default { handle_failure "entering a second command" }
+
+send "$cursorUp"
+expect "foo2" { } default { handle_failure "recall history" }
+
+send "$cursorUp"
+expect "foo" { } default { handle_failure "recall history (two)" }
+
+send "$cursorUp"
+expect "> " { } default { handle_failure "recall history (three)" }
+
+send "$cursorDown"
+send "$cursorDown"
+expect "foo2" { } default { handle_failure "recall history (four)" }
+
+send "$cursorDown"
+expect "> " { } default { handle_failure "recall history (five)" }
+
+send \x04
+expect eof { } default { handle_failure "quitting" }
+
+send_user "All tests passed."
