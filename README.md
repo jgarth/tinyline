@@ -21,6 +21,8 @@ could be:
 
 #include "tinyline.h"
 
+// Prints back (and saves to history) whatever the 
+// user entered. Terminate with CTRL+D.
 int main(int argc, char** argv) {
   TinyLine_setup();
   char* command = NULL;
@@ -43,8 +45,9 @@ cc tinyline.c example.c -o example
 ### Tests
 
 Has integration tests (`make test` or `./test`) written with `expect`.
+
 `expect` was written in 1990 by Don Libes at NIST and still does the job perfectly. Thanks, Don!
 
 ### Contributing
 
-If you create a PR (awesome!), please include a test case, ideally in the main `test` file.
+If you create a PR (awesome!), please include a test case in the main `test` file.
